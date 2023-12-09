@@ -1,19 +1,21 @@
 import React, { useState } from 'react'
-import { FormControl, InputLabel, TextField, Select, MenuItem, Button } from '@mui/material'
+import { FormControl, Backdrop, CircularProgress, InputLabel, TextField, Select, MenuItem, Button } from '@mui/material'
 
 
 const Nfc = () => {
   const [tab, setTab] = useState(0)
   const [receivingAmt, setAmt] = useState(0);
+  const [loading, setLoading] = useState(false);
   const tempWalletAdd = "0x24115509B5D3D12cdA1Ee1391975478a567E70Ec";
   const receiverWallet = "0x5B0Dcb05eD89f6124A5e3D5C0A25C4ABBe3B7325";
 
   async function loadNFC() {
+    setLoading(true);
     const response = await fetch(`https://ethindiasignerapi-production.up.railway.app/getsigninghash/${tempWalletAdd}`);
     let paymentStatus = await response.json();
     console.log(paymentStatus["payHash"]);
-
     await onWrite(paymentStatus["payHash"]);
+    setLoading(false);
   }
 
 
@@ -29,6 +31,7 @@ const Nfc = () => {
   };
 
   const onRead = async () => {
+    setLoading(true);
     try {
       const ndef = new window.NDEFReader();
       await ndef.scan();
@@ -36,20 +39,23 @@ const Nfc = () => {
       console.log("Scan started successfully.");
       ndef.onreadingerror = () => {
         console.log("Cannot read data from the NFC tag. Try another one?");
+        setLoading(false);
       };
 
       ndef.onreading = async event => {
         console.log("NDEF message read.");
         await onReading(event);
+        setLoading(false);
       };
 
     } catch (error) {
       console.log(`Error! Scan failed to start: ${error}.`);
     };
+    setLoading(false);
   };
 
-  const onReading = async ({ msg }) => {
-    for (const record of msg.records) {
+  const onReading = async ({ message }) => {
+    for (const record of message.records) {
       switch (record.recordType) {
         case "text":
           const textDecoder = new TextDecoder(record.encoding);
@@ -98,6 +104,14 @@ const Nfc = () => {
 
   return (
     <div>
+      {loading ?
+        <Backdrop
+          sx={{ color: '#fff', zIndex: 5, opacity: 1, visibility: "visible" }}
+          open={{ loading }}
+        >
+          <CircularProgress color="inherit" />
+        </Backdrop> : null
+      }
       <div className=" rounded-md text-white bg-black">
         <div className="p-2">
           fdsf
@@ -155,7 +169,7 @@ const Nfc = () => {
             </div>)
         }
       </div>
-    </div>
+    </div >
   )
 }
 
