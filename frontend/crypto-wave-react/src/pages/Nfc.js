@@ -5,7 +5,6 @@ import { FormControl, InputLabel, TextField, Select, MenuItem, Button } from '@m
 const Nfc = () => {
   const [tab, setTab] = useState(0)
   const [receivingAmt, setAmt] = useState(0);
-  const [nfcCardMsg, setMessage] = useState(0);
   const tempWalletAdd = "0x24115509B5D3D12cdA1Ee1391975478a567E70Ec";
   const receiverWallet = "0x5B0Dcb05eD89f6124A5e3D5C0A25C4ABBe3B7325";
 
@@ -39,22 +38,24 @@ const Nfc = () => {
         console.log("Cannot read data from the NFC tag. Try another one?");
       };
 
-      ndef.onreading = event => {
+      ndef.onreading = async event => {
         console.log("NDEF message read.");
-        onReading(event);
+        await onReading(event);
       };
 
     } catch (error) {
       console.log(`Error! Scan failed to start: ${error}.`);
     };
-  }
+  };
 
-  const onReading = ({ message }) => {
-    for (const record of message.records) {
+  const onReading = async ({ msg }) => {
+    for (const record of msg.records) {
       switch (record.recordType) {
         case "text":
           const textDecoder = new TextDecoder(record.encoding);
-          setMessage(textDecoder.decode(record.data));
+          console.log(textDecoder)
+          console.log(textDecoder.decode(record.data));
+          await receiveNFC(textDecoder.decode(record.data));
           break;
         case "url":
           // TODO: Read URL record with record data.
@@ -65,32 +66,34 @@ const Nfc = () => {
     }
   };
 
-  async function receiveNFC() {
+  async function receiveNFC(payHashStr) {
+    try {
+      const payHash = {
+        "reciever": receiverWallet,
+        "amount": receivingAmt * 10e8,
+        "payHash": payHashStr
+      };
 
-    await onRead();
-
-    const payHash = {
-      "reciever": "0x4a6F0e0407236DbD66dacD812632d842CBaCE737",
-      "amount": 20000000,
-      "payHash": nfcCardMsg
-    };
-
-    const response = await fetch(`https://ethindiasignerapi-production.up.railway.app/processpay`, {
-      method: "POST", // *GET, POST, PUT, DELETE, etc.
-      mode: "cors", // no-cors, *cors, same-origin
-      cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-      credentials: "same-origin", // include, *same-origin, omit
-      headers: {
-        "Content-Type": "application/json",
-        // 'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      redirect: "follow", // manual, *follow, error
-      referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-      body: JSON.stringify(payHash), // body data type must match "Content-Type" header
-    });
-    console.log(response.json());
-    const paymentStatus = await response.json();
-    console.log(paymentStatus)
+      const response = await fetch(`https://ethindiasignerapi-production.up.railway.app/processpay`, {
+        method: "POST", // *GET, POST, PUT, DELETE, etc.
+        mode: "cors", // no-cors, *cors, same-origin
+        cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: "same-origin", // include, *same-origin, omit
+        headers: {
+          "Content-Type": "application/json",
+          // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        redirect: "follow", // manual, *follow, error
+        referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        body: JSON.stringify(payHash), // body data type must match "Content-Type" header
+      });
+      console.log(response.json());
+      const paymentStatus = await response.json();
+      console.log(paymentStatus);
+    }
+    catch (error) {
+      console.log(error);
+    }
   }
 
   return (
@@ -143,9 +146,11 @@ const Nfc = () => {
                   </Select>
                 </FormControl>
                 <FormControl fullWidth>
-                  <TextField id="outlined-basic" value={setAmt} type='number' label="Receive Amount" variant="outlined" />
+                  <TextField id="outlined-basic" value={receivingAmt} onChange={function (event: React.ChangeEvent<HTMLInputElement>) {
+                    setAmt(event.target.value);
+                  }} type='number' label="Receive Amount" variant="outlined" />
                 </FormControl>
-                <Button onClick={receiveNFC} variant="contained">Load Card</Button>
+                <Button onClick={onRead} variant="contained">Receive Amount</Button>
               </div>
             </div>)
         }
