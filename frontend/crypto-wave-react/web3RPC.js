@@ -1,4 +1,7 @@
 import Web3 from "web3";
+import { bondsAbi, erc20Abi } from "./abi/abi";
+import { Biconomy } from "@biconomy/mexa";
+import { nfcAbi } from "./abi/nfcAbi";
 
 export default class RPC {
   constructor(provider) {
@@ -48,6 +51,41 @@ export default class RPC {
     }
   }
 
+
+  async getNfcBalance() {
+    try {
+      const web3 = new Web3(this.provider);
+      const web31 = new Web3("https://goerli.base.org");
+      const address = (await web3.eth.getAccounts())[0];
+      console.log(address);
+      var contract = new web31.eth.Contract(nfcAbi, "0x5013d127469B5088E4B4576b51C7D6303ADa9D20");
+      const balance = await contract.methods.balanceOf(address).call();
+      console.log(balance);
+      return balance;
+
+    } catch (error) {
+      return error;
+    }
+  }
+
+  async getSpendingLimit() {
+    try {
+      const web3 = new Web3(this.provider);
+      const web31 = new Web3("https://goerli.base.org");
+      const address = (await web3.eth.getAccounts())[0];
+      console.log(address);
+      var contract = new web31.eth.Contract(nfcAbi, "0x5013d127469B5088E4B4576b51C7D6303ADa9D20");
+      const spendLimit = await contract.methods.getSpendlimit(address).call();
+      console.log(spendLimit);
+      const spendLimitUsed = await contract.methods.getSpendlimitUsed(address).call();
+        return spendLimit - spendLimitUsed
+
+    } catch (error) {
+      return error;
+    }
+  }
+
+
   async sendTransaction() {
     try {
       const web3 = new Web3(this.provider);
@@ -72,6 +110,118 @@ export default class RPC {
       return error;
     }
   }
+
+
+  async approve(tokenAddress, amount, decimal, bondsContractAddress) {
+    const web3 = new Web3(this.provider);
+    const transformedAmount = amount * 10 ** decimal
+    const fromAddress = (await web3.eth.getAccounts())[0];
+
+    var contract = new web3.eth.Contract(erc20Abi, tokenAddress);
+    try {
+      const transaction = await contract.methods.approve(
+        bondsContractAddress,
+        transformedAmount)
+      const data = transaction.encodeABI();
+      console.log(data);
+      const receipt = await web3.eth.sendTransaction({
+        from: fromAddress,
+        to: tokenAddress,
+        value: 0,
+        data: data,
+        maxPriorityFeePerGas: "5000000000", // Max priority fee per gas
+        maxFeePerGas: "6000000000000", // Max fee per gas
+      });
+      return receipt
+    } catch (error) {
+      return error
+    }
+  }
+
+  async hasApproval(tokenAddress, amount, decimal, bondsContractAddress) {
+
+    const web3 = new Web3(this.provider);
+    const transformedAmount = amount * 10 ** decimal
+    const fromAddress = (await web3.eth.getAccounts())[0];
+
+    var contract = new web3.eth.Contract(erc20Abi, tokenAddress);
+    try {
+      const allowance = await contract.methods.allowance(fromAddress, bondsContractAddress).call()
+      if (allowance >= transformedAmount) {
+        return true
+      } else {
+        return false
+      }
+    } catch (error) {
+      return error
+    }
+  }
+
+  async createBond(tokenAddress, amount, decimal, hash, bondsContractAddress) {
+    const contractabi = bondsAbi;
+    const web3 = new Web3(this.provider);
+    const transformedAmount = amount * 10 ** decimal;
+    var contract = new web3.eth.Contract(contractabi, bondsContractAddress);
+    try {
+      const transaction = contract.methods.createBond(
+        tokenAddress,
+        transformedAmount,
+        hash
+      );
+
+      console.log(typeof tokenAddress, tokenAddress);
+      console.log(typeof transformedAmount, transformedAmount);
+      console.log(typeof hash, hash);
+
+      const data = transaction.encodeABI();
+
+      const fromAddress = (await web3.eth.getAccounts())[0];
+
+      const receipt = await web3.eth.sendTransaction({
+        from: fromAddress,
+        to: bondsContractAddress,
+        value: 0,
+        data: data,
+      });
+
+      return receipt;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async redeemGaslessBond(tokenId, secret, bondsContractAddress) {
+    try {
+      // console.log(tokenId);
+      // const biconomy = new Biconomy(this.provider, {
+      //   apiKey: "l_FudXjpA.ceb6719d-57b2-4f0a-88ce-1fdeec3217a4",
+      //   debug: true,
+      //   contractAddresses: [bondsContractAddress],
+      // });
+      // await biconomy.init();
+      const web3 = new Web3(this.provider);
+      var contractInstance = new web3.eth.Contract(bondsAbi, bondsContractAddress);
+      // const contractInstance = new web3.Contract(
+      //   bondsContractAddress,
+      //   bondsAbi,
+      //   biconomy.ethersProvider
+      // );
+      const transaction = await contractInstance.methods.redeemBond(
+        tokenId,
+        secret
+      );
+      let data = transaction.encodeABI();
+      const address = await this.getAccounts()
+      const receipt = await web3.eth.sendTransaction({
+        from: address,
+        to: bondsContractAddress,
+        value: 0,
+        data: data,
+      });
+      console.log(receipt);
+    } catch (error) { }
+  }
+
   async sendContractTransaction() {
     try {
       let tokenConstant;

@@ -11,32 +11,39 @@ import Nfc from "./pages/Nfc";
 import Bond from "./pages/Bond";
 import Home from "./pages/Home";
 import LoggedInLayout from "./pages/LoggedInLayout";
+import LoggedOffPage from "./pages/LoggedOffPage";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <App/>,
+    element: <App />,
   },
   {
-    path:'/nfc',
-    element: <Nfc/>
+    path: '/nfc',
+    element: <Nfc />
   }
   ,
   {
-    path:'/bond',
-    element: <Bond/>
+    path: '/bond',
+    element: <Bond />
   },
   {
-    path:'/home',
-    element:<Home/>
+    path: '/home',
+    element: <Home />
+  },
+  {
+    path:'/login',
+    element: <LoggedOffPage/>
   }
 ]);
 
+
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-  <LoggedInLayout>
-    <RouterProvider router={router} />
-  </LoggedInLayout>
+    <LoggedInLayout>
+      <RouterProvider router={router} />
+    </LoggedInLayout>
 );
 
 // If you want to start measuring performance in your app, pass a function
