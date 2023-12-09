@@ -162,6 +162,7 @@ function App() {
     const privateKey = await rpc.getPrivateKey();
     console.log(privateKey);
   };
+
   const loggedInView = (
     <>
       <button onClick={getUserInfo} className="card" style={styles.button}>
@@ -206,7 +207,6 @@ function App() {
     </button>
   );
 
-  console.log(provider);
 
   return (
     <div
@@ -218,9 +218,6 @@ function App() {
         paddingRight: "5%",
       }}
     >
-      <h3 style={{ textAlign: "center", marginTop: 30 }}>
-        Web3Auth React Example
-      </h3>
       <div className="row">
         <div className="col-md-3">
           {" "}
