@@ -2,22 +2,26 @@ import { useEffect, useState } from "react";
 import { Web3Auth } from "@web3auth/modal";
 
 // import { Web3Auth } from "@web3auth/web3auth";
+import { web3AuthContext } from "./AuthContext";
 import { CHAIN_NAMESPACES } from "@web3auth/base";
 import RPC from "./web3RPC";
 import "./App.css";
+import { useContext } from "react";
+import LoggedInLayout from "./pages/LoggedInLayout";
 
 const clientId =
   "BMrrbJU8DbyV7FKnGrvovVqozQOOvFpP3Dkab63myF4wL7gZdTynfQaDNGi9b0lIgMlAgnfjUu6kAGp7CBbtvjk"; // get from https://dashboard.web3auth.io
 
 function App() {
-  const [web3auth, setWeb3auth] = useState(null);
+  const object = useContext(web3AuthContext);
+  // const [web3auth, setWeb3auth] = useState(null);
   const [provider, setProvider] = useState(null);
   const [address, setAddress] = useState("");
   const [balance, setBalance] = useState("");
   const [chainId, setChainId] = useState("");
   const [userData, setUserData] = useState({});
   const [loggedIn, setLoggedIn] = useState(false);
-
+  console.log(object);
 
   let styles = {
     button: {
@@ -44,18 +48,16 @@ function App() {
           clientId,
           chainConfig: {
             chainNamespace: CHAIN_NAMESPACES.EIP155,
-            chainId: "0x13881",
+            chainId: "0x5",
             rpcTarget: "https://rpc.ankr.com/polygon_mumbai",
           }
         });
-        setWeb3auth(web3auth);
+        object.setWeb3Auth(web3auth);
         await web3auth.initModal();
 
         if (web3auth.connected) {
           setLoggedIn(true);
         }
-
-        setProvider(web3auth.provider);
       } catch (error) {
         console.error(error);
       }
@@ -65,26 +67,29 @@ function App() {
   }, []);
 
   const login = async () => {
-    if (!web3auth) {
+    if (!object.web3Auth) {
       console.log("web3auth not initialized yet");
       return;
     }
-    console.log(provider);
-    console.log(web3auth);
-    const web3authProvider = await web3auth.connect();
+    const web3authProvider = await object.web3Auth.connect();
     console.log(web3authProvider);
-    setProvider(web3authProvider);
-    if (web3auth.connected) {
+    // console.log(JSON.stringify(object.web3Auth));
+    object.setWeb3Auth(web3authProvider);
+
+    // setProvider(web3authProvider);
+    if (object.web3Auth.connected) {
       setLoggedIn(true);
     }
   };
   const logout = async () => {
-    if (!web3auth) {
+    if (!object.web3Auth) {
       console.log("web3auth not initialized yet");
       return;
     }
-    const web3authProvider = await web3auth.logout();
-    setProvider(null);
+    console.log(object.web3Auth.provider);
+    await object.web3Auth.logout();
+    localStorage.removeItem('web3auth')
+    object.setWeb3Auth(null)
     setLoggedIn(false);
     setBalance("");
     setAddress("");
@@ -93,21 +98,21 @@ function App() {
   };
 
   const getUserInfo = async () => {
-    if (!web3auth) {
+    if (!object.web3Auth) {
       console.log("web3auth not initialized yet");
       return;
     }
-    const user = await web3auth.getUserInfo();
+    const user = await object.web3Auth.getUserInfo();
     setUserData(user);
     console.log(user);
   };
 
   const getChainId = async () => {
-    if (!provider) {
+    if (!object.web3Auth.provider) {
       console.log("provider not initialized yet");
       return;
     }
-    const rpc = new RPC(provider);
+    const rpc = new RPC(object.web3Auth.provider);
     const chainId = await rpc.getChainId();
     console.log(chainId);
     setChainId(chainId);
@@ -135,11 +140,11 @@ function App() {
   };
 
   const sendTransaction = async () => {
-    if (!provider) {
+    if (!object.web3Auth.provider) {
       console.log("provider not initialized yet");
       return;
     }
-    const rpc = new RPC(provider);
+    const rpc = new RPC(object.web3Auth.provider);
     const receipt = await rpc.sendTransaction();
     console.log(receipt);
   };
@@ -207,8 +212,11 @@ function App() {
     </button>
   );
 
+  console.log(loggedIn);
 
   return (
+    <LoggedInLayout>
+
     <div
       className="container"
       style={{
@@ -240,6 +248,8 @@ function App() {
         </div>
       </div>
     </div>
+    </LoggedInLayout>
+
   );
 }
 
