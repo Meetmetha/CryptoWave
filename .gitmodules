@@ -4,3 +4,12 @@
 [submodule "contract/lib/openzeppelin-contracts"]
 	path = contract/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "contract/lib/chainlink"]
+	path = contract/lib/chainlink
+	url = https://github.com/smartcontractkit/chainlink
+[submodule "contract/lib/ccip"]
+	path = contract/lib/ccip
+	url = https://github.com/smartcontractkit/ccip
+[submodule "contract/lib/solidity-examples"]
+	path = contract/lib/solidity-examples
+	url = https://github.com/LayerZero-Labs/solidity-examples
